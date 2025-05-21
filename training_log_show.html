@@ -1,0 +1,264 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>訓練日誌</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    /* 確保表格無格線並向左及向上對齊 */
+    .no-border-table {
+      border-collapse: collapse;
+      border: none;
+    }
+    .no-border-table td {
+      border: none;
+      padding: 0.5rem;
+      text-align: left;          /* 向左對齊 */
+      vertical-align: top;       /* 向上對齊 */
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="container mx-auto p-4 max-w-4xl">
+    <h1 class="text-3xl font-bold text-center mb-6">訓練日誌</h1>
+    <div class="mb-6">
+      <label for="date-picker" class="block text-lg font-medium mb-2">選擇日期：</label>
+      <input id="date-picker" class="border rounded p-2 w-full" placeholder="選擇日期">
+    </div>
+    <div id="log-display" class="bg-white shadow-md rounded-lg p-6">
+      <h2 class="text-xl font-semibold mb-4">訓練日誌內容</h2>
+      <div id="log-content" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize variables
+    let trainingData = [];
+    let trainingDates = [];
+    let datePicker;
+
+    // Initialize Flatpickr after data is fetched
+    function initializeDatePicker() {
+      datePicker = flatpickr('#date-picker', {
+        dateFormat: 'Y/n/j', // YYYY/M/D format
+        locale: {
+          firstDayOfWeek: 1 // Monday as first day
+        },
+        onChange: function(selectedDates, dateStr) {
+          displayLog(dateStr);
+        },
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+          const date = formatDate(dayElem.dateObj);
+          if (trainingDates.includes(date)) {
+            dayElem.style.color = '#0B6E4F';
+            dayElem.style.fontWeight = 'bold';
+          }
+        }
+      });
+    }
+
+    // Format date to YYYY/M/D
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${year}/${month}/${day}`;
+    }
+
+    // Normalize date to YYYY/M/D
+    function normalizeDate(dateStr) {
+      if (!dateStr || dateStr.trim() === '') return null;
+      dateStr = dateStr.trim().replace(/[\r\n]+/g, '');
+      const formats = [
+        { regex: /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/, parse: (y, m, d) => new Date(y, m - 1, d) }, // YYYY/M/D
+        { regex: /^(\d{4})-(\d{2})-(\d{2})$/, parse: (y, m, d) => new Date(y, m - 1, d) }, // YYYY-MM-DD
+        { regex: /^(\d{4})\/(\d{2})\/(\d{2})$/, parse: (y, m, d) => new Date(y, m - 1, d) }, // YYYY/MM/DD
+        { regex: /^(\d{2})-(\d{2})-(\d{4})$/, parse: (m, d, y) => new Date(y, m - 1, d) }, // MM-DD-YYYY
+        { regex: /^(\d{2})\/(\d{2})\/(\d{4})$/, parse: (m, d, y) => new Date(y, m - 1, d) }  // MM/DD/YYYY
+      ];
+      for (const format of formats) {
+        const match = dateStr.match(format.regex);
+        if (match) {
+          const date = format.parse(match[1], match[2], match[3]);
+          if (!isNaN(date)) {
+            return formatDate(date);
+          }
+        }
+      }
+      console.warn(`Invalid date format: ${dateStr}`);
+      return null;
+    }
+
+    // Fetch and parse CSV data
+    async function fetchTrainingData() {
+      const sheetId = '1ejh1UuOR9TflxB3o8tXg4VXrYm6Q9XlLeDcLBxHJzas';
+      const gid = '943759458';
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      
+      try {
+        const response = await fetch(url);
+        const csvText = await response.text();
+        trainingData = parseCSV(csvText);
+        trainingDates = [...new Set(trainingData.map(row => row['日期']).filter(date => date))];
+        initializeDatePicker();
+        if (trainingDates.length > 0) {
+          const latestDate = trainingDates.sort().reverse()[0];
+          datePicker.setDate(latestDate);
+          displayLog(latestDate);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        document.getElementById('log-content').innerHTML = 
+          '<p class="text-red-500">無法載入訓練日誌數據，請稍後再試。</p>';
+      }
+    }
+
+    // Parse CSV text to array of objects, preserving newlines
+    function parseCSV(csvText) {
+      const lines = [];
+      let currentLine = '';
+      let inQuotes = false;
+      const data = [];
+      const headers = [];
+
+      // Split CSV into fields, preserving newlines within quoted fields
+      for (let i = 0; i < csvText.length; i++) {
+        const char = csvText[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          currentLine += '\0'; // Use null character as temporary delimiter
+        } else if (char === '\n' && !inQuotes) {
+          if (currentLine.trim()) {
+            lines.push(currentLine);
+            currentLine = '';
+          }
+        } else {
+          currentLine += char;
+        }
+      }
+      if (currentLine.trim()) {
+        lines.push(currentLine);
+      }
+
+      // Process headers
+      if (lines.length > 0) {
+        headers.push(...lines[0].split('\0').map(h => h.trim().replace(/^"|"$/g, '')));
+      }
+
+      // Process data rows
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split('\0').map(v => v.trim().replace(/^"|"$/g, ''));
+        const row = {};
+        headers.forEach((header, index) => {
+          if (header === '日期' && index === 2) {
+            row[header] = normalizeDate(values[index]);
+          } else {
+            row[header] = values[index] || '';
+          }
+        });
+        if (row['日期']) {
+          data.push(row);
+        }
+      }
+      return data;
+    }
+
+    // Display log for selected date in table format without borders
+    function displayLog(date) {
+      const logContent = document.getElementById('log-content');
+      const log = trainingData.find(row => row['日期'] === date);
+      
+      if (log) {
+        // Escape HTML and handle newlines
+        const escapeHtml = (text) => {
+          return text
+            .replace(/&/g, '&')
+            .replace(/</g, '<')
+            .replace(/>/g, '>')
+            .replace(/\n/g, '<br>');
+        };
+        const fields = [
+          { label: '日期', key: '日期' },
+          { label: '訓練類型', key: '訓練類型' },
+          { label: '訓練內容', key: '訓練內容' },
+          { label: '訓練辛苦程度評分', key: '訓練辛苦程度評分' },
+          { label: '主觀努力投入評分', key: '主觀努力投入評分' },
+          { label: '訓練感受', key: '訓練感受' },
+          { label: '是否有不適或疼痛？', key: '是否有不適或疼痛？' },
+          { label: '如有請描述一下', key: '如有請描述一下' },
+          { label: '當天飲食', key: '當天飲食' },
+          { label: '睡眠時數', key: '睡眠時數' },
+          { label: '睡眠質量', key: '睡眠質量' },
+          { label: '精神狀態', key: '精神狀態' },
+          { label: '肌肉狀態', key: '肌肉狀態' },
+          { label: '上次訓練恢復狀態', key: '上次訓練恢復狀態' },
+          { label: '其他反饋與問題', key: '其他反饋與問題' },
+          { label: '給自己的鼓勵', key: '給自己的鼓勵' },
+          { label: '體重(練習前)', key: '體重(練習前)' },
+          { label: '體重(練習後)', key: '體重(練習後)' }
+        ];
+        let tableHtml = '<table class="no-border-table">';
+        fields.forEach(field => {
+          const value = log[field.key] || '';
+          tableHtml += `
+            <tr>
+              <td><strong>${field.label}：</strong></td>
+              <td>${escapeHtml(value)}</td>
+            </tr>
+          `;
+        });
+        tableHtml += '</table>';
+        logContent.innerHTML = tableHtml;
+      } else {
+        logContent.innerHTML = '<p class="text-gray-500">該日期無訓練日誌。</p>';
+      }
+    }
+
+    // Fetch data on page load
+    fetchTrainingData();
+  </script>
+</body>
+</html>
