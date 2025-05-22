@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -47,29 +8,65 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
-    /* 確保表格無格線並向左及向上對齊 */
+    /* 表格樣式 */
     .no-border-table {
       border-collapse: collapse;
       border: none;
+      width: 100%;
     }
     .no-border-table td {
       border: none;
       padding: 0.5rem;
-      text-align: left;          /* 向左對齊 */
-      vertical-align: top;       /* 向上對齊 */
+      text-align: left;
+      vertical-align: top;
+    }
+    /* 自定義 Flatpickr 樣式 */
+    .flatpickr-input {
+      background-color: #f0f9ff !important;
+      border-color: #38bdf8 !important;
+    }
+    .flatpickr-day.selected {
+      background-color: #38bdf8 !important;
+      border-color: #38bdf8 !important;
+    }
+    /* 手機端響應式調整 */
+    @media (max-width: 640px) {
+      .no-border-table tr {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+      }
+      .no-border-table td {
+        display: block;
+        width: 100%;
+      }
+      .no-border-table td:first-child {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #1e40af;
+      }
+      .no-border-table td:last-child {
+        padding-left: 0;
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
-<body class="bg-gray-100 font-sans">
-  <div class="container mx-auto p-4 max-w-4xl">
-    <h1 class="text-3xl font-bold text-center mb-6">訓練日誌</h1>
-    <div class="mb-6">
-      <label for="date-picker" class="block text-lg font-medium mb-2">選擇日期：</label>
-      <input id="date-picker" class="border rounded p-2 w-full" placeholder="選擇日期">
+<body class="bg-sky-50 font-sans">
+  <div class="container mx-auto p-6 max-w-5xl">
+    <h1 class="text-4xl font-bold text-center mb-8 text-sky-900">訓練日誌</h1>
+    <div class="mb-8">
+      <label for="date-picker" class="block text-lg font-medium mb-3 text-sky-800">選擇日期：</label>
+      <input id="date-picker" class="border rounded-lg p-3 w-full shadow-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" placeholder="選擇日期">
     </div>
-    <div id="log-display" class="bg-white shadow-md rounded-lg p-6">
-      <h2 class="text-xl font-semibold mb-4">訓練日誌內容</h2>
-      <div id="log-content" class="space-y-4"></div>
+    <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+      <button id="prev-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一則</button>
+      <button id="next-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一則</button>
+      <button id="latest-log" class="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 hover:scale-105 transition transform duration-200">最新一則</button>
+    </div>
+    <div id="log-display" class="bg-white shadow-lg rounded-xl p-8">
+      <h2 class="text-2xl font-semibold mb-6 text-sky-900">訓練日誌內容</h2>
+      <div id="log-content" class="space-y-4 text-gray-800"></div>
     </div>
   </div>
 
@@ -78,6 +75,7 @@
     let trainingData = [];
     let trainingDates = [];
     let datePicker;
+    let currentDateIndex = -1;
 
     // Initialize Flatpickr after data is fetched
     function initializeDatePicker() {
@@ -87,7 +85,9 @@
           firstDayOfWeek: 1 // Monday as first day
         },
         onChange: function(selectedDates, dateStr) {
+          updateCurrentDateIndex(dateStr);
           displayLog(dateStr);
+          updateButtonStates();
         },
         onDayCreate: function(dObj, dStr, fp, dayElem) {
           const date = formatDate(dayElem.dateObj);
@@ -141,12 +141,14 @@
         const response = await fetch(url);
         const csvText = await response.text();
         trainingData = parseCSV(csvText);
-        trainingDates = [...new Set(trainingData.map(row => row['日期']).filter(date => date))];
+        trainingDates = [...new Set(trainingData.map(row => row['日期']).filter(date => date))].sort();
         initializeDatePicker();
         if (trainingDates.length > 0) {
-          const latestDate = trainingDates.sort().reverse()[0];
+          const latestDate = trainingDates[trainingDates.length - 1];
+          currentDateIndex = trainingDates.length - 1;
           datePicker.setDate(latestDate);
           displayLog(latestDate);
+          updateButtonStates();
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -206,6 +208,33 @@
       return data;
     }
 
+    // Update current date index
+    function updateCurrentDateIndex(date) {
+      currentDateIndex = trainingDates.indexOf(date);
+    }
+
+    // Update button states (enable/disable)
+    function updateButtonStates() {
+      const prevButton = document.getElementById('prev-log');
+      const nextButton = document.getElementById('next-log');
+      // Disable "Previous" button if at the first log
+      if (currentDateIndex <= 0) {
+        prevButton.classList.add('opacity-50', 'cursor-not-allowed');
+        prevButton.disabled = true;
+      } else {
+        prevButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        prevButton.disabled = false;
+      }
+      // Disable "Next" button if at the last log
+      if (currentDateIndex >= trainingDates.length - 1) {
+        nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+        nextButton.disabled = true;
+      } else {
+        nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        nextButton.disabled = false;
+      }
+    }
+
     // Display log for selected date in table format without borders
     function displayLog(date) {
       const logContent = document.getElementById('log-content');
@@ -253,9 +282,38 @@
         tableHtml += '</table>';
         logContent.innerHTML = tableHtml;
       } else {
-        logContent.innerHTML = '<p class="text-gray-500">該日期無訓練日誌。</p>';
+        logContent.innerHTML = '<p class="text-red-500">該日期無訓練日誌。</p>';
       }
     }
+
+    // Event listeners for navigation buttons
+    document.getElementById('prev-log').addEventListener('click', () => {
+      if (currentDateIndex > 0) {
+        currentDateIndex--;
+        const newDate = trainingDates[currentDateIndex];
+        datePicker.setDate(newDate);
+        displayLog(newDate);
+        updateButtonStates();
+      }
+    });
+
+    document.getElementById('next-log').addEventListener('click', () => {
+      if (currentDateIndex < trainingDates.length - 1) {
+        currentDateIndex++;
+        const newDate = trainingDates[currentDateIndex];
+        datePicker.setDate(newDate);
+        displayLog(newDate);
+        updateButtonStates();
+      }
+    });
+
+    document.getElementById('latest-log').addEventListener('click', () => {
+      currentDateIndex = trainingDates.length - 1;
+      const latestDate = trainingDates[currentDateIndex];
+      datePicker.setDate(latestDate);
+      displayLog(latestDate);
+      updateButtonStates();
+    });
 
     // Fetch data on page load
     fetchTrainingData();
