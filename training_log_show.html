@@ -49,6 +49,11 @@
         padding-left: 0;
         font-size: 1rem;
       }
+      /* 按鈕大小與佈局調整 */
+      .nav-buttons button {
+        padding: 0.5rem 1rem; /* 縮小按鈕尺寸 */
+        font-size: 0.875rem; /* 縮小字體 */
+      }
     }
   </style>
 </head>
@@ -59,7 +64,7 @@
       <label for="date-picker" class="block text-lg font-medium mb-3 text-sky-800">選擇日期：</label>
       <input id="date-picker" class="border rounded-lg p-3 w-full shadow-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" placeholder="選擇日期">
     </div>
-    <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-8">
+    <div class="nav-buttons flex flex-row justify-center space-x-4 mb-8">
       <button id="prev-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一則</button>
       <button id="next-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一則</button>
       <button id="latest-log" class="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 hover:scale-105 transition transform duration-200">最新一則</button>
@@ -282,7 +287,7 @@
         tableHtml += '</table>';
         logContent.innerHTML = tableHtml;
       } else {
-        logContent.innerHTML = '<p class="text-red-500">該日期無訓練日誌。</p>';
+        logContent.innerHTML = '<p class="text-red-500">無法載入訓練日誌數據，請稍後再試。</p>';
       }
     }
 
