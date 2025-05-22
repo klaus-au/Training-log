@@ -37,33 +37,58 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
-<html lang="zh-HK">
+</script>
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>訓練日誌表單</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .form-section, .confirmation-section { margin-bottom: 20px; }
-        label { display: block; margin-top: 10px; }
-        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; }
-        .star-rating { display: flex; gap: 5px; }
-        .star-rating input { display: none; }
-        .star-rating label { cursor: pointer; font-size: 24px; color: #ccc; }
-        .star-rating input:checked ~ label { color: #f90; }
-        .star-rating input:checked + label { color: #f90; }
-        button { padding: 10px 20px; margin: 10px 5px; }
+        .form-section, .confirm-section, .thank-you-section { display: none; }
+        .form-section.active, .confirm-section.active, .thank-you-section.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        textarea { height: 100px; }
+        .error { color: red; font-size: 0.9em; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        .radio-group label { display: inline-block; margin-right: 10px; }
+
+        /* 星星評分樣式 */
+        .star-rating { display: flex; flex-wrap: wrap; gap: 5px; font-size: 24px; }
+        .star { cursor: pointer; color: #ccc; transition: color 0.2s; }
+        .star.selected { color: gold; }
+        @media (max-width: 600px) {
+            .star-rating { gap: 3px; font-size: 20px; }
+            .star { margin-right: 2px; }
+        }
     </style>
 </head>
 <body>
-    <div class="form-section">
-        <h1>訓練日誌表單</h1>
-        <form id="trainingForm">
-            <label>姓名 * <input type="text" name="name" required></label>
-            <label>日期 * <input type="date" name="date" required></label>
-            <label>訓練類型 *
-                <select name="trainingType" required>
+    <!-- 表單頁面 -->
+    <div id="form-section" class="form-section active">
+        <h2>訓練日誌表單</h2>
+        <form id="training-log-form">
+            <div class="form-group">
+                <label for="name">姓名 *</label>
+                <input type="text" id="name" name="name" placeholder="請輸入學員姓名" required>
+                <span class="error" id="name-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="training-date">日期 *</label>
+                <input type="text" id="training-date" name="training-date" placeholder="請選擇訓練日期" required>
+                <span class="error" id="training-date-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="training-type">訓練類型 *</label>
+                <select id="training-type" name="training-type" required>
                     <option value="">請選擇訓練類型</option>
                     <option value="搏擊">搏擊</option>
                     <option value="搏擊(港隊)">搏擊(港隊)</option>
@@ -72,51 +97,96 @@
                     <option value="體能">體能</option>
                     <option value="綜合">綜合</option>
                 </select>
-            </label>
-            <label>體重(練習前) * <input type="number" step="0.1" name="weightBefore" required></label>
-            <label>體重(練習後) * <input type="number" step="0.1" name="weightAfter" required></label>
-            <label>訓練內容 * <textarea name="trainingContent" required></textarea></label>
-            <label>訓練辛苦程度評分 * (10=好辛苦, 5=一般, 1=好輕鬆)
-                <div class="star-rating">
-                    <input type="radio" name="effortRating" value="10" id="effort10" required><label for="effort10">★</label>
-                    <input type="radio" name="effortRating" value="9" id="effort9"><label for="effort9">★</label>
-                    <input type="radio" name="effortRating" value="8" id="effort8"><label for="effort8">★</label>
-                    <input type="radio" name="effortRating" value="7" id="effort7"><label for="effort7">★</label>
-                    <input type="radio" name="effortRating" value="6" id="effort6"><label for="effort6">★</label>
-                    <input type="radio" name="effortRating" value="5" id="effort5"><label for="effort5">★</label>
-                    <input type="radio" name="effortRating" value="4" id="effort4"><label for="effort4">★</label>
-                    <input type="radio" name="effortRating" value="3" id="effort3"><label for="effort3">★</label>
-                    <input type="radio" name="effortRating" value="2" id="effort2"><label for="effort2">★</label>
-                    <input type="radio" name="effortRating" value="1" id="effort1"><label for="effort1">★</label>
+                <span class="error" id="training-type-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="weight-before">體重(練習前) *</label>
+                <input type="text" id="weight-before" name="weight-before" placeholder="請輸入體重" required>
+                <span class="error" id="weight-before-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="weight-after">體重(練習後) *</label>
+                <input type="text" id="weight-after" name="weight-after" placeholder="請輸入體重" required>
+                <span class="error" id="weight-after-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="training-content">訓練內容 *</label>
+                <textarea id="training-content" name="training-content" placeholder="請具體回憶今天的訓練內容" required></textarea>
+                <span class="error" id="training-content-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>訓練辛苦程度評分 * <small>(10=好辛苦, 5=一般, 1=好輕鬆)</small></label>
+                <div class="star-rating" id="training-effort-rating">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                    <span class="star" data-value="6">★</span>
+                    <span class="star" data-value="7">★</span>
+                    <span class="star" data-value="8">★</span>
+                    <span class="star" data-value="9">★</span>
+                    <span class="star" data-value="10">★</span>
                 </div>
-            </label>
-            <label>主觀努力投入評分 * (10=能努力投入, 5=一般, 1=不能投入)
-                <div class="star-rating">
-                    <input type="radio" name="engagementRating" value="10" id="engage10" required><label for="engage10">★</label>
-                    <input type="radio" name="engagementRating" value="9" id="engage9"><label for="engage9">★</label>
-                    <input type="radio" name="engagementRating" value="8" id="engage8"><label for="engage8">★</label>
-                    <input type="radio" name="engagementRating" value="7" id="engage7"><label for="engage7">★</label>
-                    <input type="radio" name="engagementRating" value="6" id="engage6"><label for="engage6">★</label>
-                    <input type="radio" name="engagementRating" value="5" id="engage5"><label for="engage5">★</label>
-                    <input type="radio" name="engagementRating" value="4" id="engage4"><label for="engage4">★</label>
-                    <input type="radio" name="engagementRating" value="3" id="engage3"><label for="engage3">★</label>
-                    <input type="radio" name="engagementRating" value="2" id="engage2"><label for="engage2">★</label>
-                    <input type="radio" name="engagementRating" value="1" id="engage1"><label for="engage1">★</label>
+                <input type="hidden" name="training-effort" id="training-effort">
+                <span class="error" id="training-effort-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>主觀努力投入評分 * <small>(10=能努力投入, 5=一般, 1=不能投入)</small></label>
+                <div class="star-rating" id="effort-level-rating">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                    <span class="star" data-value="6">★</span>
+                    <span class="star" data-value="7">★</span>
+                    <span class="star" data-value="8">★</span>
+                    <span class="star" data-value="9">★</span>
+                    <span class="star" data-value="10">★</span>
                 </div>
-            </label>
-            <label>訓練感受 * <textarea name="trainingFeeling" required></textarea></label>
-            <label>是否有不適或疼痛？ *
-                <input type="radio" name="discomfort" value="是" id="discomfortYes" required><label for="discomfortYes">是</label>
-                <input type="radio" name="discomfort" value="否" id="discomfortNo"><label for="discomfortNo">否</label>
-            </label>
-            <label>如有請描述一下 <textarea name="discomfortDescription"></textarea></label>
-            <label>當天飲食 * <textarea name="diet" required></textarea></label>
-            <label>睡眠時數 *
-                <select name="sleepHours" required>
+                <input type="hidden" name="effort-level" id="effort-level">
+                <span class="error" id="effort-level-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="training-feeling">訓練感受 *</label>
+                <textarea id="training-feeling" name="training-feeling" placeholder="請具體描述訓練感受" required></textarea>
+                <span class="error" id="training-feeling-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>是否有不適或疼痛？ *</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="discomfort" value="是" required> 是</label>
+                    <label><input type="radio" name="discomfort" value="否"> 否</label>
+                </div>
+                <span class="error" id="discomfort-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="discomfort-details">如有請描述一下</label>
+                <textarea id="discomfort-details" name="discomfort-details" placeholder="請描述不適或疼痛情況（選填）"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="diet">當天飲食 *</label>
+                <textarea id="diet" name="diet" placeholder="請簡述當天飲食，例如：正常三餐、中午只吃麵包" required></textarea>
+                <span class="error" id="diet-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="sleep-hours">睡眠時數 *</label>
+                <select id="sleep-hours" name="sleep-hours" required>
                     <option value="">請選擇睡眠時數</option>
                     <option value="10小時">10小時</option>
                     <option value="9小時">9小時</option>
-                    <option value="8小時">8小時</option>
+                    <option value="10小時">10小時</option>
                     <option value="7小時">7小時</option>
                     <option value="6小時">6小時</option>
                     <option value="5小時">5小時</option>
@@ -126,102 +196,401 @@
                     <option value="1小時">1小時</option>
                     <option value="沒有">沒有</option>
                 </select>
-            </label>
-            <label>睡眠質量 *
-                <select name="sleepQuality" required>
+                <span class="error" id="sleep-hours-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="sleep-quality">睡眠質量 *</label>
+                <select id="sleep-quality" name="sleep-quality" required>
                     <option value="">請選擇睡眠質量</option>
                     <option value="質量很好">質量很好</option>
                     <option value="質量一般">質量一般</option>
                     <option value="質量不好">質量不好</option>
                 </select>
-            </label>
-            <label>精神狀態 *
-                <input type="radio" name="mentalState" value="精力充沛" id="mentalEnergetic" required><label for="mentalEnergetic">精力充沛</label>
-                <input type="radio" name="mentalState" value="一般" id="mentalNormal"><label for="mentalNormal">一般</label>
-                <input type="radio" name="mentalState" value="疲憊" id="mentalTired"><label for="mentalTired">疲憊</label>
-            </label>
-            <label>肌肉狀態 *
-                <input type="radio" name="muscleState" value="精力充沛" id="muscleEnergetic" required><label for="muscleEnergetic">精力充沛</label>
-                <input type="radio" name="muscleState" value="一般" id="muscleNormal"><label for="muscleNormal">一般</label>
-                <input type="radio" name="muscleState" value="疲勞" id="muscleTired"><label for="muscleTired">疲勞</label>
-            </label>
-            <label>上次訓練恢復狀態 *
-                <input type="radio" name="recoveryState" value="完全恢復" id="recoveryFull" required><label for="recoveryFull">完全恢復</label>
-                <input type="radio" name="recoveryState" value="仍有少少疲勞" id="recoveryPartial"><label for="recoveryPartial">仍有少少疲勞</label>
-                <input type="radio" name="recoveryState" value="非常疲勞" id="recoveryTired"><label for="recoveryTired">非常疲勞</label>
-            </label>
-            <label>其他反饋與問題 <textarea name="feedback"></textarea></label>
-            <label>給自己的鼓勵 * <textarea name="encouragement" required></textarea></label>
+                <span class="error" id="sleep-quality-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>精神狀態 *</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="mental-state" value="精力充沛" required> 精力充沛</label>
+                    <label><input type="radio" name="mental-state" value="一般"> 一般</label>
+                    <label><input type="radio" name="mental-state" value="疲憊"> 疲憊</label>
+                </div>
+                <span class="error" id="mental-state-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>肌肉狀態 *</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="muscle-state" value="精力充沛" required> 精力充沛</label>
+                    <label><input type="radio" name="muscle-state" value="一般"> 一般</label>
+                    <label><input type="radio" name="muscle-state" value="疲勞"> 疲勞</label>
+                </div>
+                <span class="error" id="muscle-state-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>上次訓練恢復狀態 *</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="recovery-state" value="完全恢復" required> 完全恢復</label>
+                    <label><input type="radio" name="recovery-state" value="仍有少少疲勞"> 仍有少少疲勞</label>
+                    <label><input type="radio" name="recovery-state" value="非常疲勞"> 非常疲勞</label>
+                </div>
+                <span class="error" id="recovery-state-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback">其他反饋與問題</label>
+                <textarea id="feedback" name="feedback" placeholder="例如課上不明白的動作（選填）"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="encouragement">給自己的鼓勵 *</label>
+                <textarea id="encouragement" name="encouragement" placeholder="請輸入一句簡單的鼓勵話語" required></textarea>
+                <span class="error" id="encouragement-error"></span>
+            </div>
+
             <button type="submit">提交表單</button>
-            <button type="button" onclick="resetForm()">重新記錄</button>
         </form>
     </div>
 
-    <div class="confirmation-section" style="display: none;">
-        <h1>請確認您的訓練日誌</h1>
-        <p>姓名：<span id="confirmName"></span></p>
-        <p>日期：<span id="confirmDate"></span></p>
-        <p>訓練類型：<span id="confirmTrainingType"></span></p>
-        <p>體重(練習前)：<span id="confirmWeightBefore"></span></p>
-        <p>體重(練習後)：<span id="confirmWeightAfter"></span></p>
-        <p>訓練內容：<span id="confirmTrainingContent"></span></p>
-        <p>訓練辛苦程度評分：<span id="confirmEffortRating"></span></p>
-        <p>主觀努力投入評分：<span id="confirmEngagementRating"></span></p>
-        <p>訓練感受：<span id="confirmTrainingFeeling"></span></p>
-        <p>是否有不適或疼痛：<span id="confirmDiscomfort"></span></p>
-        <p>不適或疼痛描述：<span id="confirmDiscomfortDescription"></span></p>
-        <p>當天飲食：<span id="confirmDiet"></span></p>
-        <p>睡眠時數：<span id="confirmSleepHours"></span></p>
-        <p>睡眠質量：<span id="confirmSleepQuality"></span></p>
-        <p>精神狀態：<span id="confirmMentalState"></span></p>
-        <p>肌肉狀態：<span id="confirmMuscleState"></span></p>
-        <p>上次訓練恢復狀態：<span id="confirmRecoveryState"></span></p>
-        <p>其他反饋與問題：<span id="confirmFeedback"></span></p>
-        <p>給自己的鼓勵：<span id="confirmEncouragement"></span></p>
-        <button onclick="cancelSubmission()">取消</button>
-        <button onclick="confirmSubmission()">確認提交</button>
+    <!-- 確認頁面 -->
+    <div id="confirm-section" class="confirm-section">
+        <h2>請確認您的訓練日誌</h2>
+        <p><strong>姓名：</strong> <span id="confirm-name"></span></p>
+        <p><strong>日期：</strong> <span id="confirm-training-date"></span></p>
+        <p><strong>訓練類型：</strong> <span id="confirm-training-type"></span></p>
+        <p><strong>體重(練習前)：</strong> <span id="confirm-weight-before"></span></p>
+        <p><strong>體重(練習後)：</strong> <span id="confirm-weight-after"></span></p>
+        <p><strong>訓練內容：</strong> <span id="confirm-training-content"></span></p>
+        <p><strong>訓練辛苦程度評分：</strong> <span id="confirm-training-effort"></span></p>
+        <p><strong>主觀努力投入評分：</strong> <span id="confirm-effort-level"></span></p>
+        <p><strong>訓練感受：</strong> <span id="confirm-training-feeling"></span></p>
+        <p><strong>是否有不適或疼痛：</strong> <span id="confirm-discomfort"></span></p>
+        <p><strong>不適或疼痛描述：</strong> <span id="confirm-discomfort-details"></span></p>
+        <p><strong>當天飲食：</strong> <span id="confirm-diet"></span></p>
+        <p><strong>睡眠時數：</strong> <span id="confirm-sleep-hours"></span></p>
+        <p><strong>睡眠質量：</strong> <span id="confirm-sleep-quality"></span></p>
+        <p><strong>精神狀態：</strong> <span id="confirm-mental-state"></span></p>
+        <p><strong>肌肉狀態：</strong> <span id="confirm-muscle-state"></span></p>
+        <p><strong>上次訓練恢復狀態：</strong> <span id="confirm-recovery-state"></span></p>
+        <p><strong>其他反饋與問題：</strong> <span id="confirm-feedback"></span></p>
+        <p><strong>給自己的鼓勵：</strong> <span id="confirm-encouragement"></span></p>
+        <button onclick="goBack()">取消</button>
+        <button onclick="submitForm()">確認提交</button>
     </div>
 
+    <!-- 感謝頁面 -->
+    <div id="thank-you-section" class="thank-you-section">
+        <h2 id="random-quote"></h2>
+        <button onclick="resetForm()">重新記錄</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
-        function resetForm() {
-            document.getElementById('trainingForm').reset();
-            window.history.back();
-        }
+        let calendar;
+        let currentTrainingEffort = null;
+        let currentEffortLevel = null;
 
-        document.getElementById('trainingForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            document.querySelector('.form-section').style.display = 'none';
-            document.querySelector('.confirmation-section').style.display = 'block';
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化 Flatpickr 日曆
+            calendar = flatpickr('#training-date', {
+                mode: 'single',
+                dateFormat: 'Y-m-d',
+                maxDate: 'today',
+                onChange: function(selectedDates, dateStr, instance) {
+                    document.getElementById('training-date-error').textContent = selectedDates.length ? '' : '請選擇訓練日期';
+                }
+            });
 
-            document.getElementById('confirmName').textContent = this.name.value;
-            document.getElementById('confirmDate').textContent = this.date.value;
-            document.getElementById('confirmTrainingType').textContent = this.trainingType.value;
-            document.getElementById('confirmWeightBefore').textContent = this.weightBefore.value;
-            document.getElementById('confirmWeightAfter').textContent = this.weightAfter.value;
-            document.getElementById('confirmTrainingContent').textContent = this.trainingContent.value;
-            document.getElementById('confirmEffortRating').textContent = this.effortRating.value;
-            document.getElementById('confirmEngagementRating').textContent = this.engagementRating.value;
-            document.getElementById('confirmTrainingFeeling').textContent = this.trainingFeeling.value;
-            document.getElementById('confirmDiscomfort').textContent = this.discomfort.value;
-            document.getElementById('confirmDiscomfortDescription').textContent = this.discomfortDescription.value;
-            document.getElementById('confirmDiet').textContent = this.diet.value;
-            document.getElementById('confirmSleepHours').textContent = this.sleepHours.value;
-            document.getElementById('confirmSleepQuality').textContent = this.sleepQuality.value;
-            document.getElementById('confirmMentalState').textContent = this.mentalState.value;
-            document.getElementById('confirmMuscleState').textContent = this.muscleState.value;
-            document.getElementById('confirmRecoveryState').textContent = this.recoveryState.value;
-            document.getElementById('confirmFeedback').textContent = this.feedback.value;
-            document.getElementById('confirmEncouragement').textContent = this.encouragement.value;
+            // 監聽訓練類型變化，動態設置體重字段預設值
+            const trainingTypeSelect = document.getElementById('training-type');
+            const weightBeforeInput = document.getElementById('weight-before');
+            const weightAfterInput = document.getElementById('weight-after');
+
+            trainingTypeSelect.addEventListener('change', () => {
+                const selectedType = trainingTypeSelect.value;
+                if (selectedType === '品勢' || selectedType === '品勢(港隊)') {
+                    weightBeforeInput.value = 'N/A';
+                    weightAfterInput.value = 'N/A';
+                    document.getElementById('weight-before-error').textContent = '';
+                    document.getElementById('weight-after-error').textContent = '';
+                } else {
+                    weightBeforeInput.value = '';
+                    weightAfterInput.value = '';
+                }
+            });
+
+            // 星星評分邏輯
+            const trainingEffortStars = document.querySelectorAll('#training-effort-rating .star');
+            const effortLevelStars = document.querySelectorAll('#effort-level-rating .star');
+
+            trainingEffortStars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const value = parseInt(star.getAttribute('data-value'));
+                    if (currentTrainingEffort === value) {
+                        // 點擊同一顆星星，重置選擇
+                        currentTrainingEffort = null;
+                        document.getElementById('training-effort').value = '';
+                        trainingEffortStars.forEach(s => s.classList.remove('selected'));
+                    } else {
+                        // 選擇新值
+                        currentTrainingEffort = value;
+                        document.getElementById('training-effort').value = value;
+                        trainingEffortStars.forEach(s => {
+                            s.classList.remove('selected');
+                            if (parseInt(s.getAttribute('data-value')) <= value) {
+                                s.classList.add('selected');
+                            }
+                        });
+                    }
+                    document.getElementById('training-effort-error').textContent = currentTrainingEffort ? '' : '請選擇訓練辛苦程度';
+                });
+            });
+
+            effortLevelStars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const value = parseInt(star.getAttribute('data-value'));
+                    if (currentEffortLevel === value) {
+                        // 點擊同一顆星星，重置選擇
+                        currentEffortLevel = null;
+                        document.getElementById('effort-level').value = '';
+                        effortLevelStars.forEach(s => s.classList.remove('selected'));
+                    } else {
+                        // 選擇新值
+                        currentEffortLevel = value;
+                        document.getElementById('effort-level').value = value;
+                        effortLevelStars.forEach(s => {
+                            s.classList.remove('selected');
+                            if (parseInt(s.getAttribute('data-value')) <= value) {
+                                s.classList.add('selected');
+                            }
+                        });
+                    }
+                    document.getElementById('effort-level-error').textContent = currentEffortLevel ? '' : '請選擇努力投入程度';
+                });
+            });
+
+            // 表單提交
+            document.getElementById('training-log-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (validateForm()) {
+                    showConfirm();
+                }
+            });
         });
 
-        function cancelSubmission() {
-            document.querySelector('.form-section').style.display = 'block';
-            document.querySelector('.confirmation-section').style.display = 'none';
+        function validateForm() {
+            let isValid = true;
+            const name = document.getElementById('name').value;
+            const trainingDate = document.getElementById('training-date').value;
+            const trainingType = document.getElementById('training-type').value;
+            const weightBefore = document.getElementById('weight-before').value;
+            const weightAfter = document.getElementById('weight-after').value;
+            const trainingContent = document.getElementById('training-content').value;
+            const trainingEffort = document.getElementById('training-effort').value;
+            const effortLevel = document.getElementById('effort-level').value;
+            const trainingFeeling = document.getElementById('training-feeling').value;
+            const discomfort = document.querySelector('input[name="discomfort"]:checked');
+            const diet = document.getElementById('diet').value;
+            const sleepHours = document.getElementById('sleep-hours').value;
+            const sleepQuality = document.getElementById('sleep-quality').value;
+            const mentalState = document.querySelector('input[name="mental-state"]:checked');
+            const muscleState = document.querySelector('input[name="muscle-state"]:checked');
+            const recoveryState = document.querySelector('input[name="recovery-state"]:checked');
+            const encouragement = document.getElementById('encouragement').value;
+
+            document.getElementById('name-error').textContent = name ? '' : '請輸入姓名';
+            document.getElementById('training-date-error').textContent = trainingDate ? '' : '請選擇訓練日期';
+            document.getElementById('training-type-error').textContent = trainingType ? '' : '請選擇訓練類型';
+
+            // 體重驗證：品勢或品勢(港隊)允許任意值（包括預設的'N/A'），其他類型要求有值
+            if (trainingType === '品勢' || trainingType === '品勢(港隊)') {
+                document.getElementById('weight-before-error').textContent = weightBefore ? '' : '請輸入體重';
+                document.getElementById('weight-after-error').textContent = weightAfter ? '' : '請輸入體重';
+            } else {
+                document.getElementById('weight-before-error').textContent = weightBefore ? '' : '請輸入體重';
+                document.getElementById('weight-after-error').textContent = weightAfter ? '' : '請輸入體重';
+            }
+
+            document.getElementById('training-content-error').textContent = trainingContent ? '' : '請描述訓練內容';
+            document.getElementById('training-effort-error').textContent = trainingEffort ? '' : '請選擇訓練辛苦程度';
+            document.getElementById('effort-level-error').textContent = effortLevel ? '' : '請選擇努力投入程度';
+            document.getElementById('training-feeling-error').textContent = trainingFeeling ? '' : '請描述訓練感受';
+            document.getElementById('discomfort-error').textContent = discomfort ? '' : '請選擇是否有不適或疼痛';
+            document.getElementById('diet-error').textContent = diet ? '' : '請描述當天飲食';
+            document.getElementById('sleep-hours-error').textContent = sleepHours ? '' : '請選擇睡眠時數';
+            document.getElementById('sleep-quality-error').textContent = sleepQuality ? '' : '請選擇睡眠質量';
+            document.getElementById('mental-state-error').textContent = mentalState ? '' : '請選擇精神狀態';
+            document.getElementById('muscle-state-error').textContent = muscleState ? '' : '請選擇肌肉狀態';
+            document.getElementById('recovery-state-error').textContent = recoveryState ? '' : '請選擇恢復狀態';
+            document.getElementById('encouragement-error').textContent = encouragement ? '' : '請輸入鼓勵話語';
+
+            // 驗證邏輯：所有情況下體重字段必須有值（品勢或品勢(港隊)可為'N/A'或手動輸入）
+            const isWeightValid = weightBefore && weightAfter;
+
+            return name && trainingDate && trainingType && isWeightValid && trainingContent &&
+                   trainingEffort && effortLevel && trainingFeeling && discomfort && diet &&
+                   sleepHours && sleepQuality && mentalState && muscleState && recoveryState && encouragement;
         }
 
-        function confirmSubmission() {
-            alert('表單已提交！');
-            resetForm();
+        function showConfirm() {
+            document.getElementById('confirm-name').textContent = document.getElementById('name').value;
+            document.getElementById('confirm-training-date').textContent = document.getElementById('training-date').value;
+            document.getElementById('confirm-training-type').textContent = document.getElementById('training-type').value;
+            document.getElementById('confirm-weight-before').textContent = document.getElementById('weight-before').value;
+            document.getElementById('confirm-weight-after').textContent = document.getElementById('weight-after').value;
+            document.getElementById('confirm-training-content').textContent = document.getElementById('training-content').value;
+            document.getElementById('confirm-training-effort').textContent = document.getElementById('training-effort').value;
+            document.getElementById('confirm-effort-level').textContent = document.getElementById('effort-level').value;
+            document.getElementById('confirm-training-feeling').textContent = document.getElementById('training-feeling').value;
+            document.getElementById('confirm-discomfort').textContent = document.querySelector('input[name="discomfort"]:checked').value;
+            document.getElementById('confirm-discomfort-details').textContent = document.getElementById('discomfort-details').value || '無';
+            document.getElementById('confirm-diet').textContent = document.getElementById('diet').value;
+            document.getElementById('confirm-sleep-hours').textContent = document.getElementById('sleep-hours').value;
+            document.getElementById('confirm-sleep-quality').textContent = document.getElementById('sleep-quality').value;
+            document.getElementById('confirm-mental-state').textContent = document.querySelector('input[name="mental-state"]:checked').value;
+            document.getElementById('confirm-muscle-state').textContent = document.querySelector('input[name="muscle-state"]:checked').value;
+            document.getElementById('confirm-recovery-state').textContent = document.querySelector('input[name="recovery-state"]:checked').value;
+            document.getElementById('confirm-feedback').textContent = document.getElementById('feedback').value || '無';
+            document.getElementById('confirm-encouragement').textContent = document.getElementById('encouragement').value;
+            document.getElementById('form-section').classList.remove('active');
+            document.getElementById('confirm-section').classList.add('active');
+        }
+
+        function goBack() {
+            document.getElementById('confirm-section').classList.remove('active');
+            document.getElementById('form-section').classList.add('active');
+        }
+
+        function submitForm() {
+            // 語錄陣列
+            const quotes = [
+                '成功不是沒有障礙，而是有勇氣繼續前進。',
+                '你不比別人差，只是還沒找到自己的節奏。',
+                '每一次跌倒，都是為了讓你站得更高。',
+                '訓練的痛苦是暫時的，但放棄的遺憾是永遠的。',
+                '你的對手不是別人，而是昨天的自己。',
+                '不要害怕失敗，害怕的是你從未嘗試。',
+                '成功不是終點，失敗也不是終結，唯有勇氣才是永恆。',
+                '你必須先相信自己，才能讓別人相信你。',
+                '每滴汗水，都是你向夢想靠近的證明。',
+                '偉大的運動員不是贏得最多的人，而是永不放棄的人。',
+                '比賽始於起跑線，但勝利屬於堅持到終點的人。',
+                '當你覺得放棄的時候，想想為什麼開始。',
+                '你的身體會告訴你要停下，但你的心會告訴你要繼續。',
+                '天賦帶你上場，努力讓你成為傳奇。',
+                '沒有捷徑，只有一步一腳印的努力。',
+                '真正的冠軍，是在沒人看見時仍全力以赴的人。',
+                '失敗是成功的學費，堅持是成功的入場券。',
+                '你有多努力，就有多幸運。',
+                '跑得慢沒關係，重要的是你還在跑。',
+                '挑戰你的極限，因為那是成長的開始。',
+                '當你想放棄時，想想那些相信你的人。',
+                '不要等待機會，創造機會。',
+                '強者不是沒有眼淚，而是含著淚繼續奔跑。',
+                '每一次努力，都是在為你的夢想投票。',
+                '成功屬於那些準備好的人。',
+                '比賽的輸贏是暫時的，但精神是永遠的。',
+                '你的夢想有多大，你的努力就要有多大。',
+                '不要害怕比你強的人，學習他們，超越他們。',
+                '紀律是通往自由的橋樑。',
+                '當你覺得累時，告訴自己：這就是變強的感覺。',
+                '成功是99%的汗水加上1%的天賦。',
+                '每一次訓練，都是在雕刻更好的自己。',
+                '贏得比賽的不是最快的人，而是最堅持的人。',
+                '你的信念，決定你的高度。',
+                '沒有不可能，只有不嘗試。',
+                '真正的對手，是你內心的恐懼。',
+                '每一步都算數，因為它們帶你走向終點。',
+                '不要讓昨天的失敗，影響明天的成功。',
+                '運動員的價值不在於獎牌，而在於追求卓越的心。',
+                '當你超越自己，你就贏得了真正的比賽。',
+                '堅持不懈，直到你的夢想成為現實。',
+                '汗水是努力的證明，榮耀是堅持的回報。',
+                '你不需要成為第一，但你必須全力以赴。',
+                '比賽的真正意義，是發現自己的潛能。',
+                '偉大的成就，來自於平凡的堅持。',
+                '當你覺得無路可走時，再往前一步。',
+                '你的努力，會讓不可能變成可能。',
+                '成為冠軍的第一步，是相信自己可以。',
+                '每一次挑戰，都是讓你更強大的機會。',
+                '永遠不要低估一顆決心成為最好自己的心。'
+            ];
+
+            // 隨機選擇一句語錄
+            const randomIndex = Math.floor(Math.random() * quotes.length);
+            const randomQuote = quotes[randomIndex];
+
+            // 顯示語錄
+            document.getElementById('random-quote').textContent = randomQuote;
+
+            // 準備提交到 Google Forms 的數據
+            const formData = new URLSearchParams();
+            const trainingDate = new Date(document.getElementById('training-date').value);
+
+            formData.append('entry.1650497070', document.getElementById('name').value); // 姓名
+            formData.append('entry.2013198233', document.getElementById('weight-before').value); // 體重(練習前)
+            formData.append('entry.2057152994', document.getElementById('weight-after').value); // 體重(練習後)
+            formData.append('entry.1944044768', document.getElementById('training-content').value); // 訓練內容
+            formData.append('entry.591975285', document.getElementById('training-feeling').value); // 訓練感受
+            formData.append('entry.1065179343', document.getElementById('discomfort-details').value || ''); // 如有請描述一下
+            formData.append('entry.686950219', document.getElementById('diet').value); // 當天飲食
+            formData.append('entry.385770519', document.getElementById('feedback').value || ''); // 其他反饋與問題
+            formData.append('entry.1587988735', document.getElementById('encouragement').value); // 給自己的鼓勵
+            formData.append('entry.498537958_year', trainingDate.getFullYear().toString()); // 日期(年)
+            formData.append('entry.498537958_month', (trainingDate.getMonth() + 1).toString().padStart(2, '0')); // 日期(月)
+            formData.append('entry.498537958_day', trainingDate.getDate().toString().padStart(2, '0')); // 日期(日)
+            formData.append('entry.886806558', document.getElementById('sleep-hours').value); // 睡眠時數
+            formData.append('entry.301154569', document.getElementById('sleep-quality').value); // 睡眠質量
+            formData.append('entry.1082495504', document.getElementById('training-type').value); // 訓練類型
+            formData.append('entry.1514148240', document.getElementById('training-effort').value); // 訓練辛苦程度評分
+            formData.append('entry.1809062747', document.getElementById('effort-level').value); // 主觀努力投入評分
+            formData.append('entry.291727563', document.querySelector('input[name="discomfort"]:checked')?.value || ''); // 是否有不適或疼痛？
+            formData.append('entry.1163877965', document.querySelector('input[name="mental-state"]:checked')?.value || ''); // 精神狀態
+            formData.append('entry.793756934', document.querySelector('input[name="muscle-state"]:checked')?.value || ''); // 肌肉狀態
+            formData.append('entry.15757014', document.querySelector('input[name="recovery-state"]:checked')?.value || ''); // 上次訓練恢復狀態
+
+            console.log('Submitting form data:', formData.toString()); // 調試日誌
+
+            // 提交到 Google Forms
+            fetch('https://docs.google.com/forms/d/e/1FAIpQLSdZUKrawI6rQjbmAlKNzHUkxYQ0g7_rz2rnBZ7RIVpbHUAqGw/formResponse', {
+                method: 'POST',
+                mode: 'no-cors',
+                body: formData
+            })
+            .then(() => {
+                console.log('Form submission attempted (no-cors mode, no response available)'); // 調試日誌
+                // 由於 Google Forms 使用 no-cors 模式，無法直接獲取回應，但仍可顯示感謝頁面
+                document.getElementById('confirm-section').classList.remove('active');
+                document.getElementById('thank-you-section').classList.add('active');
+            })
+            .catch(error => {
+                console.error('提交失敗:', error);
+                // 即使失敗，仍顯示感謝頁面（模擬成功）
+                document.getElementById('confirm-section').classList.remove('active');
+                document.getElementById('thank-you-section').classList.add('active');
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('training-log-form').reset();
+            calendar.clear();
+            document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+            // 重置星星評分
+            document.querySelectorAll('.star').forEach(star => star.classList.remove('selected'));
+            currentTrainingEffort = null;
+            currentEffortLevel = null;
+            document.getElementById('training-effort').value = '';
+            document.getElementById('effort-level').value = '';
+            // 重置體重字段值
+            document.getElementById('weight-before').value = '';
+            document.getElementById('weight-after').value = '';
+            // 清空錯誤信息
+            document.querySelectorAll('.error').forEach(error => error.textContent = '');
+            // 返回上一頁
+            window.history.back();
         }
     </script>
 </body>
