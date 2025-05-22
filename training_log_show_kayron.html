@@ -89,15 +89,25 @@
         font-size: 1rem;
       }
       /* 按鈕大小與佈局調整 */
-      .nav-buttons button,
-      .nav-buttons a {
-        padding: 0.5rem 1rem; /* 縮小按鈕尺寸 */
-        font-size: 0.875rem; /* 縮小字體 */
-      }
-      .log-nav-buttons button {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-      }
+
+        .nav-buttons button,
+        .nav-buttons a {
+          padding: 0.375rem 0.75rem; /* 縮小內邊距 */
+          font-size: 0.75rem; /* 縮小字體 */
+          min-width: 4.5rem; /* 縮小最小寬度 */
+          white-space: nowrap;
+          text-align: center;
+        }
+
+
+        .log-nav-buttons button {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.75rem;
+          min-width: 4.5rem;
+          white-space: nowrap;
+          text-align: center;
+        }
+
     }
   </style>
 </head>
@@ -108,7 +118,7 @@
       <label for="date-picker" class="block text-lg font-medium mb-3 text-sky-800">選擇日期：</label>
       <input id="date-picker" class="border rounded-lg p-3 w-full shadow-sm focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition" placeholder="選擇日期">
     </div>
-    <div class="nav-buttons flex flex-row justify-center space-x-4 mb-8">
+    <div class="nav-buttons flex flex-row justify-center space-x-2 mb-8">
       <button id="prev-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一則</button>
       <button id="next-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一則</button>
       <button id="latest-log" class="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 hover:scale-105 transition transform duration-200">最新一則</button>
@@ -116,7 +126,7 @@
     </div>
     <div id="log-display" class="bg-white shadow-lg rounded-xl p-8">
       <h2 class="text-2xl font-semibold mb-6 text-sky-900">訓練日誌內容</h2>
-      <div id="log-nav" class="log-nav-buttons flex flex-row justify-center space-x-4 mb-4 hidden">
+      <div id="log-nav" class="log-nav-buttons flex flex-row justify-center space-x-2 mb-4 hidden">
         <button id="prev-log-entry" class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一個日誌</button>
         <button id="next-log-entry" class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一個日誌</button>
       </div>
