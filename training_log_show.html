@@ -54,6 +54,10 @@
         padding: 0.5rem 1rem; /* 縮小按鈕尺寸 */
         font-size: 0.875rem; /* 縮小字體 */
       }
+      .log-nav-buttons button {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+      }
     }
   </style>
 </head>
@@ -71,6 +75,11 @@
     </div>
     <div id="log-display" class="bg-white shadow-lg rounded-xl p-8">
       <h2 class="text-2xl font-semibold mb-6 text-sky-900">訓練日誌內容</h2>
+      <div id="log-nav" class="log-nav-buttons flex flex-row justify-center space-x-4 mb-4 hidden">
+        <button id="prev-log-entry" class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一個日誌</button>
+        <button id="next-log-entry" class="bg-sky-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一個日誌</button>
+      </div>
+      <div id="log-counter" class="text-center text-gray-600 mb-4"></div>
       <div id="log-content" class="space-y-4 text-gray-800"></div>
     </div>
   </div>
@@ -81,6 +90,8 @@
     let trainingDates = [];
     let datePicker;
     let currentDateIndex = -1;
+    let currentLogIndex = 0;
+    let logsForCurrentDate = [];
 
     // Initialize Flatpickr after data is fetched
     function initializeDatePicker() {
@@ -91,8 +102,10 @@
         },
         onChange: function(selectedDates, dateStr) {
           updateCurrentDateIndex(dateStr);
+          currentLogIndex = 0; // Reset log index when date changes
           displayLog(dateStr);
           updateButtonStates();
+          updateLogNavButtons();
         },
         onDayCreate: function(dObj, dStr, fp, dayElem) {
           const date = formatDate(dayElem.dateObj);
@@ -151,9 +164,11 @@
         if (trainingDates.length > 0) {
           const latestDate = trainingDates[trainingDates.length - 1];
           currentDateIndex = trainingDates.length - 1;
+          currentLogIndex = 0;
           datePicker.setDate(latestDate);
           displayLog(latestDate);
           updateButtonStates();
+          updateLogNavButtons();
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -218,11 +233,11 @@
       currentDateIndex = trainingDates.indexOf(date);
     }
 
-    // Update button states (enable/disable)
+    // Update button states (enable/disable) for date navigation
     function updateButtonStates() {
       const prevButton = document.getElementById('prev-log');
       const nextButton = document.getElementById('next-log');
-      // Disable "Previous" button if at the first log
+      // Disable "Previous" button if at the first date
       if (currentDateIndex <= 0) {
         prevButton.classList.add('opacity-50', 'cursor-not-allowed');
         prevButton.disabled = true;
@@ -230,7 +245,7 @@
         prevButton.classList.remove('opacity-50', 'cursor-not-allowed');
         prevButton.disabled = false;
       }
-      // Disable "Next" button if at the last log
+      // Disable "Next" button if at the last date
       if (currentDateIndex >= trainingDates.length - 1) {
         nextButton.classList.add('opacity-50', 'cursor-not-allowed');
         nextButton.disabled = true;
@@ -240,12 +255,45 @@
       }
     }
 
-    // Display log for selected date in table format without borders
+    // Update log navigation buttons (enable/disable) for same-date logs
+    function updateLogNavButtons() {
+      const prevLogEntryButton = document.getElementById('prev-log-entry');
+      const nextLogEntryButton = document.getElementById('next-log-entry');
+      const logNav = document.getElementById('log-nav');
+      
+      if (logsForCurrentDate.length > 1) {
+        logNav.classList.remove('hidden');
+        // Update log counter
+        document.getElementById('log-counter').textContent = `日誌 ${currentLogIndex + 1}/${logsForCurrentDate.length}`;
+        // Disable "Previous Log" button if at the first log
+        if (currentLogIndex <= 0) {
+          prevLogEntryButton.classList.add('opacity-50', 'cursor-not-allowed');
+          prevLogEntryButton.disabled = true;
+        } else {
+          prevLogEntryButton.classList.remove('opacity-50', 'cursor-not-allowed');
+          prevLogEntryButton.disabled = false;
+        }
+        // Disable "Next Log" button if at the last log
+        if (currentLogIndex >= logsForCurrentDate.length - 1) {
+          nextLogEntryButton.classList.add('opacity-50', 'cursor-not-allowed');
+          nextLogEntryButton.disabled = true;
+        } else {
+          nextLogEntryButton.classList.remove('opacity-50', 'cursor-not-allowed');
+          nextLogEntryButton.disabled = false;
+        }
+      } else {
+        logNav.classList.add('hidden');
+        document.getElementById('log-counter').textContent = '';
+      }
+    }
+
+    // Display log for selected date
     function displayLog(date) {
       const logContent = document.getElementById('log-content');
-      const log = trainingData.find(row => row['日期'] === date);
+      logsForCurrentDate = trainingData.filter(row => row['日期'] === date);
       
-      if (log) {
+      if (logsForCurrentDate.length > 0) {
+        const log = logsForCurrentDate[currentLogIndex];
         // Escape HTML and handle newlines
         const escapeHtml = (text) => {
           return text
@@ -287,37 +335,61 @@
         tableHtml += '</table>';
         logContent.innerHTML = tableHtml;
       } else {
-        logContent.innerHTML = '<p class="text-red-500">無法載入訓練日誌數據，請稍後再試。</p>';
+        logContent.innerHTML = '<p class="text-red-500">該日期無訓練日誌。</p>';
       }
+      updateLogNavButtons();
     }
 
-    // Event listeners for navigation buttons
+    // Event listeners for date navigation buttons
     document.getElementById('prev-log').addEventListener('click', () => {
       if (currentDateIndex > 0) {
         currentDateIndex--;
+        currentLogIndex = 0; // Reset log index when changing date
         const newDate = trainingDates[currentDateIndex];
         datePicker.setDate(newDate);
         displayLog(newDate);
         updateButtonStates();
+        updateLogNavButtons();
       }
     });
 
     document.getElementById('next-log').addEventListener('click', () => {
       if (currentDateIndex < trainingDates.length - 1) {
         currentDateIndex++;
+        currentLogIndex = 0; // Reset log index when changing date
         const newDate = trainingDates[currentDateIndex];
         datePicker.setDate(newDate);
         displayLog(newDate);
         updateButtonStates();
+        updateLogNavButtons();
       }
     });
 
     document.getElementById('latest-log').addEventListener('click', () => {
       currentDateIndex = trainingDates.length - 1;
+      currentLogIndex = 0; // Reset log index when changing date
       const latestDate = trainingDates[currentDateIndex];
       datePicker.setDate(latestDate);
       displayLog(latestDate);
       updateButtonStates();
+      updateLogNavButtons();
+    });
+
+    // Event listeners for same-date log navigation buttons
+    document.getElementById('prev-log-entry').addEventListener('click', () => {
+      if (currentLogIndex > 0) {
+        currentLogIndex--;
+        displayLog(trainingDates[currentDateIndex]);
+        updateLogNavButtons();
+      }
+    });
+
+    document.getElementById('next-log-entry').addEventListener('click', () => {
+      if (currentLogIndex < logsForCurrentDate.length - 1) {
+        currentLogIndex++;
+        displayLog(trainingDates[currentDateIndex]);
+        updateLogNavButtons();
+      }
     });
 
     // Fetch data on page load
