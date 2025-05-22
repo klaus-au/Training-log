@@ -89,15 +89,24 @@
         font-size: 1rem;
       }
       /* 按鈕大小與佈局調整 */
-      .nav-buttons button,
-      .nav-buttons a {
-        padding: 0.5rem 1rem; /* 縮小按鈕尺寸 */
-        font-size: 0.875rem; /* 縮小字體 */
-      }
-      .log-nav-buttons button {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-      }
+        .nav-buttons button,
+        .nav-buttons a {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          min-width: 6rem; /* 新增：設置最小寬度 */
+          white-space: nowrap; /* 新增：強制文字不換行 */
+          text-align: center; /* 新增：確保文字居中 */
+        }
+
+
+        .log-nav-buttons button {
+          padding: 0.5rem 1rem;
+          font-size: 0.875rem;
+          min-width: 6rem; /* 新增：設置最小寬度 */
+          white-space: nowrap; /* 新增：強制文字不換行 */
+          text-align: center; /* 新增：確保文字居中 */
+        }
+
     }
   </style>
 </head>
