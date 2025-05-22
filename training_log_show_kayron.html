@@ -89,7 +89,8 @@
         font-size: 1rem;
       }
       /* 按鈕大小與佈局調整 */
-      .nav-buttons button {
+      .nav-buttons button,
+      .nav-buttons a {
         padding: 0.5rem 1rem; /* 縮小按鈕尺寸 */
         font-size: 0.875rem; /* 縮小字體 */
       }
@@ -111,6 +112,7 @@
       <button id="prev-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">上一則</button>
       <button id="next-log" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200">下一則</button>
       <button id="latest-log" class="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 hover:scale-105 transition transform duration-200">最新一則</button>
+      <a href="https://klaus-au.github.io/Training-log/training_log_form_v2.html" target="_blank" class="bg-sky-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-sky-600 hover:scale-105 transition transform duration-200 text-center">填寫日誌</a>
     </div>
     <div id="log-display" class="bg-white shadow-lg rounded-xl p-8">
       <h2 class="text-2xl font-semibold mb-6 text-sky-900">訓練日誌內容</h2>
@@ -191,7 +193,7 @@
     // Fetch and parse CSV data
     async function fetchTrainingData() {
       const sheetId = '1ejh1UuOR9TflxB3o8tXg4VXrYm6Q9XlLeDcLBxHJzas';
-      const gid = '412413832';
+      const gid = '412413832'; // 已更新為 "紀朗_filter" 工作頁
       const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
       
       try {
